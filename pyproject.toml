@@ -8,7 +8,13 @@ requires-python = ">=3.11,<4.0"
 dependencies = [
     "langgraph>=0.2.6",
     "langchain-anthropic>=0.1.23",
+    "langchain-community>=0.3.27",
+    "langchain-google-genai>=2.1.8",
     "langchain>=0.2.14",
+    "python-dotenv>=1.1.1",
+    "langfuse>=3.2.1",
+    "tavily-python>=0.7.10",
+    "poethepoet>=0.36.0"
 ]
 
 
@@ -23,3 +29,6 @@ packages = ["deepagents"]
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]
+
+[tool.poe.tasks]
+cli = "uv run python main.py --trace"
