@@ -1,8 +1,9 @@
 from langchain_core.tools import tool, InjectedToolCallId
 from langgraph.types import Command
 from langchain_core.messages import ToolMessage
-from typing import Annotated
+from typing import Annotated, List, Optional
 from langgraph.prebuilt import InjectedState
+from langchain_core.tools import BaseTool
 
 from deepagents.prompts import (
     WRITE_TODOS_DESCRIPTION,
@@ -10,6 +11,16 @@ from deepagents.prompts import (
     TOOL_DESCRIPTION,
 )
 from deepagents.state import Todo, DeepAgentState
+
+try:
+    from langchain_mcp_adapters.client import MultiServerMCPClient
+    MCP_AVAILABLE = True
+except ImportError:
+    MCP_AVAILABLE = False    
+
+# Global variables for MCP tools
+_mcp_client: Optional[any] = None
+_mcp_tools: List[BaseTool] = []
 
 
 @tool(description=WRITE_TODOS_DESCRIPTION)
@@ -147,3 +158,35 @@ def edit_file(
             ],
         }
     )
+
+
+async def initialize_mcp_client():
+    """Initialize MCP client and load tools."""
+    global _mcp_client, _mcp_tools
+    
+    if not MCP_AVAILABLE:
+        return []
+    
+    try:
+        # Initialize MCP client
+        _mcp_client = MultiServerMCPClient(
+            {
+                "grocery": {
+                    "transport": "streamable_http",
+                    "url": "http://localhost:8001/mcp/"
+                },
+            }
+        )
+        
+        # Get tools asynchronously
+        _mcp_tools = await _mcp_client.get_tools()
+        return _mcp_tools
+        
+    except Exception as e:
+        _mcp_tools = []
+        return []
+
+
+def get_mcp_tools() -> List[BaseTool]:
+    """Get cached MCP tools."""
+    return _mcp_tools.copy()

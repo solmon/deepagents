@@ -14,7 +14,11 @@ dependencies = [
     "python-dotenv>=1.1.1",
     "langfuse>=3.2.1",
     "tavily-python>=0.7.10",
-    "poethepoet>=0.36.0"
+    "poethepoet>=0.36.0",
+    "langchain-qwq>=0.2.0",
+    "openai>=1.99.1",
+    "langchain-openai>=0.3.28",
+    "langchain-mcp-adapters>=0.1.9"
 ]
 
 

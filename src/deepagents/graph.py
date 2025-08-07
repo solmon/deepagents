@@ -1,6 +1,6 @@
 from deepagents.sub_agent import _create_task_tool, SubAgent
 from deepagents.model import get_default_model
-from deepagents.tools import write_todos, write_file, read_file, ls, edit_file
+from deepagents.tools import write_todos, write_file, read_file, ls, edit_file, initialize_mcp_client, get_mcp_tools
 from deepagents.state import DeepAgentState
 from typing import Sequence, Union, Callable, Any, TypeVar, Type, Optional
 from langchain_core.tools import BaseTool
@@ -50,7 +50,12 @@ def create_deep_agent(
         state_schema: The schema of the deep agent. Should subclass from DeepAgentState
     """
     prompt = instructions + base_prompt
-    built_in_tools = [write_todos, write_file, read_file, ls, edit_file]
+    # await initialize_mcp_client()
+    # Ensure MCP tools are initialized
+    # mcp_tools = get_mcp_tools() 
+    # if mcp_tools:
+    #     tools = list(tools) + mcp_tools
+    built_in_tools = [] #[write_todos, write_file, read_file, ls, edit_file]
     if model is None:
         model = get_default_model()
     state_schema = state_schema or DeepAgentState

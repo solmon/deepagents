@@ -13,7 +13,7 @@ os.environ["GRPC_DEFAULT_SSL_ROOTS_FILE_PATH"] = "/home/solmon/github/questmind/
 def main():
 
     parser = argparse.ArgumentParser(description="Run research agent")
-    parser.add_argument("query", type=str, nargs="?", default="what is langgraph?", help="Research query")
+    parser.add_argument("query", type=str, nargs="?", default="find best recipe of sourdough bread", help="Research query")
     parser.add_argument("--max_results", type=int, default=5, help="Maximum number of search results")
     parser.add_argument("--topic", type=str, choices=["general", "news", "finance"], default="general", help="Search topic")
     parser.add_argument("--include_raw_content", action="store_true", help="Include raw content in search results")
@@ -47,7 +47,16 @@ def main():
             topic=topic,
         )
 
-    research_instructions = """You are an expert researcher. Your job is to conduct thorough research, and then write a polished report.
+    # research_instructions = """You are an expert researcher. Your job is to conduct thorough research, and then write a polished report.
+
+    # You have access to a few tools.
+
+    # ## `internet_search`
+
+    # Use this to run an internet search for a given query. You can specify the number of results, the topic, and whether raw content should be included.
+    # """
+
+    research_instructions = """You are an expert researcher. Your job is to conduct thorough research on the internet for a given task, and then use the information gathered to recommend a shopping cart for purchase.
 
     You have access to a few tools.
 
@@ -55,6 +64,8 @@ def main():
 
     Use this to run an internet search for a given query. You can specify the number of results, the topic, and whether raw content should be included.
     """
+
+
 
     agent = create_deep_agent(
         [internet_search],
