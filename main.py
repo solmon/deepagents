@@ -13,7 +13,9 @@ os.environ["GRPC_DEFAULT_SSL_ROOTS_FILE_PATH"] = "/home/solmon/github/questmind/
 def main():
 
     parser = argparse.ArgumentParser(description="Run research agent")
-    parser.add_argument("query", type=str, nargs="?", default="find best recipe of sourdough bread", help="Research query")
+    # parser.add_argument("query", type=str, nargs="?", default="find best recipe of sourdough bread", help="Research query")
+    # parser.add_argument("query", type=str, nargs="?", default="find me a best way to buy laptop in Bangalore and plan the purchase", help="Research query")
+    parser.add_argument("query", type=str, nargs="?", default="find me a best way to buy laptop in Bangalore and plan the purchase", help="Research query")
     parser.add_argument("--max_results", type=int, default=5, help="Maximum number of search results")
     parser.add_argument("--topic", type=str, choices=["general", "news", "finance"], default="general", help="Search topic")
     parser.add_argument("--include_raw_content", action="store_true", help="Include raw content in search results")

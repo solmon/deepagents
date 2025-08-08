@@ -55,7 +55,7 @@ def create_deep_agent(
     # mcp_tools = get_mcp_tools() 
     # if mcp_tools:
     #     tools = list(tools) + mcp_tools
-    built_in_tools = [] #[write_todos, write_file, read_file, ls, edit_file]
+    built_in_tools = [write_todos, write_file, read_file, ls, edit_file]
     if model is None:
         model = get_default_model()
     state_schema = state_schema or DeepAgentState
