@@ -1,3 +1,4 @@
+import time
 from deepagents.prompts import TASK_DESCRIPTION_PREFIX, TASK_DESCRIPTION_SUFFIX
 from deepagents.state import DeepAgentState
 from langgraph.prebuilt import create_react_agent
@@ -54,6 +55,7 @@ def _create_task_tool(tools, instructions, subagents: list[SubAgent], model, sta
             return f"Error: invoked agent of type {subagent_type}, the only allowed types are {[f'`{k}`' for k in agents]}"
         sub_agent = agents[subagent_type]
         state["messages"] = [{"role": "user", "content": description}]
+        time.sleep(20)
         result = sub_agent.invoke(state)
         return Command(
             update={

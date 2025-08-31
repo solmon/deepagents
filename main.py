@@ -42,12 +42,17 @@ def main():
             dict: Search results from Tavily API.
         """
         tavily_async_client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
-        return tavily_async_client.search(
+
+        searchResults = tavily_async_client.search(
             query,
             max_results=max_results,
             include_raw_content=include_raw_content,
             topic=topic,
         )
+
+        print(searchResults)
+
+        return searchResults
 
     # research_instructions = """You are an expert researcher. Your job is to conduct thorough research, and then write a polished report.
 
