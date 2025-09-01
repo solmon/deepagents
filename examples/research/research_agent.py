@@ -7,6 +7,24 @@ from tavily import TavilyClient
 from deepagents import create_deep_agent, SubAgent
 
 
+import os
+import uuid
+from dotenv import load_dotenv
+from pathlib import Path
+from langfuse.langchain import CallbackHandler
+
+# Load the .env that lives next to this file if present. Falls back to default lookup if not found.
+env_path = Path(__file__).parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+else:
+    # fallback to default search behavior
+    load_dotenv()
+
+os.environ["CURL_CA_BUNDLE"] = "/home/solmon/github/questmind/zscaler_root.crt"
+os.environ["REQUESTS_CA_BUNDLE"] = "/home/solmon/github/questmind/zscaler_root.crt"
+os.environ["GRPC_DEFAULT_SSL_ROOTS_FILE_PATH"] = "/home/solmon/github/questmind/zscaler_root.crt"
+
 # Search tool to use to do research
 def internet_search(
     query: str,
@@ -163,3 +181,17 @@ agent = create_deep_agent(
     research_instructions,
     subagents=[critique_sub_agent, research_sub_agent],
 ).with_config({"recursion_limit": 1000})
+
+# If Langfuse env is present, add the Langfuse CallbackHandler to the agent's default callbacks
+try:
+    import os
+    if os.environ.get("LANGFUSE_SECRET_KEY"):
+        from langfuse.langchain import CallbackHandler
+        import uuid
+
+        langfuse_handler = CallbackHandler()
+        # merge existing config with callbacks
+        agent = agent.with_config({"callbacks": [langfuse_handler], "configurable": {"thread_id": str(uuid.uuid4())}})
+except Exception:
+    # Best-effort: don't fail if langfuse isn't installed in the environment
+    pass
