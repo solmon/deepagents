@@ -164,6 +164,7 @@ def _stream_worker(invoke_kwargs: Dict[str, Any], send_fn: Callable[[str], None]
                         except Exception:
                             print(f"[_stream_worker] sending function_call protocol session={session_id} (func_call truncated)")
                         send_fn(json.dumps(payload))
+                        # Attempt to execute the function call synchronously (supports internet_search)
                     else:
                         # Normal agent message (may be empty string but UI will receive it)
                         payload = {"session": session_id, "type": "agent_message", "payload": {"text": text or ''}}

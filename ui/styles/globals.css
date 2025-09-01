@@ -54,3 +54,24 @@ body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica
 	.agent-body{flex-direction:column}
 	.agent-side{width:100%}
 }
+
+/* Search result cards */
+.results-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.result-card{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+.result-title{font-weight:600;color:var(--accent);text-decoration:none}
+.result-snippet{color:var(--muted);font-size:.95rem;margin:8px 0}
+.result-meta{font-size:.82rem;color:var(--muted);display:flex;justify-content:space-between}
+.result-json{background:rgba(255,255,255,0.02);padding:8px;border-radius:8px;overflow:auto}
+
+/* Todo / action list styling */
+.todo-list{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
+.todo-title{color:#ffb347;display:block;margin-bottom:8px;font-weight:700}
+.todo-list ul{margin:0;padding-left:18px}
+.todo-list li{margin:6px 0}
+.todo-list li.done{color:rgba(120,220,120,0.95);text-decoration:line-through}
+.todo-list li.pending{color:#ffd6a5;font-weight:700}
+
+/* Thinking indicator */
+.bubble.thinking{background:linear-gradient(90deg,#111827,#0b1220);display:inline-flex;align-items:center;gap:8px}
+.bubble.thinking .dot{width:8px;height:8px;border-radius:50%;background:#ffd166;display:inline-block;animation:blink 1s infinite}
+@keyframes blink{0%{opacity:0.2}50%{opacity:1}100%{opacity:0.2}}
