@@ -61,9 +61,13 @@ def get_gemini_model():
         client_options={
             "api_endpoint": "https://generativelanguage.googleapis.com"
         },
-        model_kwargs={
-            "enable_thinking": True  # If you want to enable this feature,            
-        }
+    # disable advanced "thinking" / function-style outputs which can return
+    # malformed function calls for some prompts. Keep model_kwargs empty for
+    # standard text outputs.
+        # model_kwargs={
+        #     "enable_thinking": True  # If you want to enable this feature,            
+        # }
+        model_kwargs={}
     )
     """Get the Gemini model for the agent."""
     return llm

@@ -52,6 +52,8 @@ def internet_search(
         include_raw_content=include_raw_content,
         topic=topic,
     )
+    print("searching travily")
+    print(searchResults)
     return searchResults
 
 research_instructions = """You are an expert researcher. Your job is to conduct thorough research on the internet for a given task, and then use the information gathered to recommend a shopping cart for purchase.
@@ -80,7 +82,19 @@ async def query_agent(request: QueryRequest):
 
         # For streaming, use agent's stream method
         async def generate():
-            for chunk in agent.stream(invoke_kwargs):
+            # Try to attach Langfuse CallbackHandler for trace logging. If the
+            # agent.stream implementation accepts `callbacks` it will forward events
+            # to Langfuse. Fall back to calling without callbacks if not supported.
+            try:
+                cb = CallbackHandler()
+                stream_iter = agent.stream(invoke_kwargs, callbacks=[cb])
+                print('[query_agent] attached langfuse CallbackHandler to stream')
+            except TypeError:
+                # older agent.stream signatures may not accept callbacks
+                stream_iter = agent.stream(invoke_kwargs)
+                print('[query_agent] agent.stream does not accept callbacks; running without langfuse callback')
+
+            for chunk in stream_iter:
                 if "messages" in chunk:
                     for message in chunk["messages"]:
                         if hasattr(message, 'content'):
@@ -105,8 +119,37 @@ def _stream_worker(invoke_kwargs: Dict[str, Any], send_fn: Callable[[str], None]
         print(f"[_stream_worker] session={session_id} started")
         send_fn(json.dumps({"session": session_id, "type": "status", "payload": {"status": "started"}}))
 
+        # Debug: surface environment and invoke kwargs for diagnosis
+        try:
+            import os as _os
+            model_type_dbg = _os.getenv('MODEL_TYPE', 'gemini')
+            gemini_key = bool(_os.getenv('GEMINI_API_KEY'))
+            openai_key = bool(_os.getenv('OPENAI_API_KEY'))
+            tavily_key = bool(_os.getenv('TAVILY_API_KEY'))
+            print(f"[_stream_worker] session={session_id} model_type={model_type_dbg} GEMINI_KEY={gemini_key} OPENAI_KEY={openai_key} TAVILY_KEY={tavily_key}")
+        except Exception:
+            pass
+        try:
+            print(f"[_stream_worker] invoke_kwargs keys: {list(invoke_kwargs.keys())}")
+        except Exception:
+            pass
+
         # call agent.stream; it may return a sync iterator or an async generator
-        result = agent.stream(invoke_kwargs)
+        # Attempt to attach langfuse tracing to websocket-invoked streams as well.
+        try:
+            cb = CallbackHandler()
+            config = {"configurable": {"thread_id": str(session_id)},"callbacks": [cb]}  # Generate unique thread ID for each conversation
+            result = agent.stream(invoke_kwargs, config)
+            try:
+                print(f"[_stream_worker] attached langfuse CallbackHandler session={session_id}")
+            except Exception:
+                pass
+        except TypeError:
+            result = agent.stream(invoke_kwargs)
+            try:
+                print(f"[_stream_worker] agent.stream does not accept callbacks session={session_id}")
+            except Exception:
+                pass
 
         processed_any = False
 
@@ -306,7 +349,11 @@ async def ag_ui_ws(websocket: WebSocket):
 
             if msg.get('type') == 'user_input':
                 user_text = msg.get('payload', {}).get('text', '')
-                print(user_text)
+                # Debug: log received user input for diagnosis
+                try:
+                    print(f"[ws] received user_input: {user_text!r}")
+                except Exception:
+                    print("[ws] received user_input (unprintable)")
                 if not user_text:
                     continue
 
@@ -320,6 +367,12 @@ async def ag_ui_ws(websocket: WebSocket):
                 invoke_kwargs["session_id"] = session_id
 
                 send_fn = make_send_fn()
+
+                # Echo a protocol event so the client can show that the server received the input
+                try:
+                    send_fn(json.dumps({"session": session_id, "type": "protocol", "payload": {"event": "received_user_input"}}))
+                except Exception:
+                    pass
 
                 # run the blocking agent.stream synchronously inside a background Thread
                 # This ensures `agent.stream` is called directly (synchronously) and can yield

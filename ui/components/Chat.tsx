@@ -29,8 +29,53 @@ export default function Chat(){
 
         client.on('open', ()=> console.log('ag-ui open'))
         client.on('message', (m)=>{
-          // Append assistant messages
-          setMessages(prev=>[...prev, { id: String(Date.now()), role: 'assistant', text: String(m) }])
+          // Append assistant messages. Support both plain string messages and
+          // structured message objects emitted by the client. Handle new AG-UI
+          // schema where a message may be: { session, type: 'agent_message', payload: { text: '...', todos: [...] } }
+          const id = String(Date.now())
+          try{
+            if(m && typeof m === 'object'){
+              // determine role
+              const role = (m.role === 'user' || m.role === 'assistant' || m.role === 'system') ? m.role : (m.type === 'user' ? 'user' : 'assistant')
+
+              // extract text from a few possible locations
+              let textVal: string | null = null
+
+              // prefer top-level text if present
+              if('text' in m && typeof (m as any).text === 'string'){
+                textVal = (m as any).text
+              }
+
+              // handle AG-UI agent_message shape with payload
+              if(!textVal && 'payload' in m && m.payload){
+                const p: any = (m as any).payload
+                if(typeof p === 'string'){
+                  textVal = p
+                }else if(typeof p.text === 'string'){
+                  textVal = p.text
+                }else if(Array.isArray(p.todos) || Array.isArray(p.todo_list) || Array.isArray(p.items)){
+                  // inject a structured payload marker so the renderer can show a todo-list UI
+                  const todos = p.todos || p.todo_list || p.items
+                  textVal = JSON.stringify({ __todo: todos })
+                }else{
+                  // fallback to serializing the payload so it's visible in chat
+                  textVal = JSON.stringify(p)
+                }
+              }
+
+              // if still no text, serialize the message object
+              if(!textVal){
+                textVal = JSON.stringify(m)
+              }
+
+              setMessages(prev=>[...prev, { id, role, text: String(textVal) }])
+            }else{
+              setMessages(prev=>[...prev, { id, role: 'assistant', text: String(m) }])
+            }
+          }catch(err){
+            // fallback to string
+            setMessages(prev=>[...prev, { id, role: 'assistant', text: String(m) }])
+          }
         })
         client.on('status', (s)=>{
           if(s === 'started') setThinking(true)
@@ -140,31 +185,43 @@ export default function Chat(){
                 }
               }catch(e){/* not json */}
 
-              // detect todo list messages in the form: Updated todo list to [ ... ]
+              // detect todo list messages in multiple forms:
+              // 1) JSON encoded payload marker {"__todo": [...]}
+              // 2) human-readable "Updated todo list to [...]" strings
               let isTodo = false
               let todoItems: any[] | null = null
               try{
-                const marker = 'Updated todo list to '
-                if(typeof m.text === 'string' && m.text.startsWith(marker)){
-                  const tail = m.text.slice(marker.length).trim()
-                  const start = tail.indexOf('[')
-                  const end = tail.lastIndexOf(']')
-                  if(start !== -1 && end !== -1 && end > start){
-                    let arrStr = tail.slice(start, end+1)
-                    try{
-                      todoItems = JSON.parse(arrStr)
-                    }catch(err){
-                      try{
-                        const normalized = arrStr.replace(/\'/g, '"')
-                        todoItems = JSON.parse(normalized)
-                      }catch(err2){
-                        todoItems = null
-                      }
-                    }
-                    if(Array.isArray(todoItems)) isTodo = true
-                  }
+                // try structured marker first
+                const parsed = JSON.parse(String(m.text))
+                if(parsed && parsed.__todo && Array.isArray(parsed.__todo)){
+                  isTodo = true
+                  todoItems = parsed.__todo
                 }
-              }catch(e){ /* ignore */ }
+              }catch(e){
+                // not structured JSON, fallback to legacy marker parsing
+                try{
+                  const marker = 'Updated todo list to '
+                  if(typeof m.text === 'string' && m.text.startsWith(marker)){
+                    const tail = m.text.slice(marker.length).trim()
+                    const start = tail.indexOf('[')
+                    const end = tail.lastIndexOf(']')
+                    if(start !== -1 && end !== -1 && end > start){
+                      let arrStr = tail.slice(start, end+1)
+                      try{
+                        todoItems = JSON.parse(arrStr)
+                      }catch(err){
+                        try{
+                          const normalized = arrStr.replace(/\'/g, '"')
+                          todoItems = JSON.parse(normalized)
+                        }catch(err2){
+                          todoItems = null
+                        }
+                      }
+                      if(Array.isArray(todoItems)) isTodo = true
+                    }
+                  }
+                }catch(e2){ /* ignore */ }
+              }
 
               return (
                 <div key={m.id} className={"msg " + (m.role==='user' ? 'user' : m.role==='assistant' ? 'assistant' : 'system')}>
@@ -188,7 +245,10 @@ export default function Chat(){
                         <strong className="todo-title">Actions</strong>
                         <ul>
                           {todoItems!.map((t:any, i:number)=> (
-                            <li key={i} className={t.status === 'completed' ? 'done' : 'pending'}>{t.content}</li>
+                            <li key={i} className={t.status === 'completed' ? 'done' : (t.status === 'in_progress' ? 'in-progress' : 'pending')}>
+                              <span className="todo-content">{t.content}</span>
+                              <span className="todo-meta">{t.status ? ` — ${t.status}` : ''}</span>
+                            </li>
                           ))}
                         </ul>
                       </div>
