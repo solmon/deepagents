@@ -196,18 +196,38 @@ def _stream_worker(invoke_kwargs: Dict[str, Any], send_fn: Callable[[str], None]
                     # If text is empty but there's a function call or other actionable additional info,
                     # emit a protocol event the UI can handle (function_call, metadata, etc.).
                     func_call = None
+                    # Recognize a broader set of keys that indicate structured tool/function calls
+                    tool_like_keys = [
+                        'function_call',
+                        'tool_call',
+                        'function_call_args',
+                        'tool',
+                        'tool_invocation',
+                        'invocation',
+                    ]
                     if isinstance(additional, dict):
-                        func_call = additional.get('function_call') or additional.get('tool_call') or additional.get('function_call_args')
+                        for k in tool_like_keys:
+                            if k in additional:
+                                func_call = additional.get(k)
+                                break
 
-                    if (not text or (isinstance(text, str) and text.strip() == '')) and func_call:
-                        # send structured protocol event for the function call
+                    # If we see structured function/tool metadata, always emit a protocol
+                    # event for it so the UI or server-side runner can act on it. Some
+                    # models (Gemini with thinking enabled) may include both text and
+                    # structured metadata; prefer exposing the structured metadata.
+                    if func_call:
                         payload = {"session": session_id, "type": "protocol", "payload": {"event": "function_call", "function_call": func_call, "additional": additional}}
                         try:
                             print(f"[_stream_worker] sending function_call protocol session={session_id} func_call={repr(func_call)[:200]}")
                         except Exception:
                             print(f"[_stream_worker] sending function_call protocol session={session_id} (func_call truncated)")
                         send_fn(json.dumps(payload))
-                        # Attempt to execute the function call synchronously (supports internet_search)
+                        # Also send the human-readable text if present so UI shows context
+                        if text and isinstance(text, str) and text.strip() != '':
+                            try:
+                                send_fn(json.dumps({"session": session_id, "type": "agent_message", "payload": {"text": text}}))
+                            except Exception:
+                                pass
                     else:
                         # Normal agent message (may be empty string but UI will receive it)
                         payload = {"session": session_id, "type": "agent_message", "payload": {"text": text or ''}}

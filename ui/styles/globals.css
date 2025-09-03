@@ -69,7 +69,12 @@ body{font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica
 .todo-list ul{margin:0;padding-left:18px}
 .todo-list li{margin:6px 0}
 .todo-list li.done{color:rgba(120,220,120,0.95);text-decoration:line-through}
+.todo-list li.in-progress{color:#ffd166;font-weight:700}
 .todo-list li.pending{color:#ffd6a5;font-weight:700}
+
+/* AI message styling */
+.ai-message{white-space:pre-wrap}
+.ai-text{color:#dbeafe}
 
 /* Thinking indicator */
 .bubble.thinking{background:linear-gradient(90deg,#111827,#0b1220);display:inline-flex;align-items:center;gap:8px}

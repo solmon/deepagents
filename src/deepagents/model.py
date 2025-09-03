@@ -53,6 +53,12 @@ def get_default_model():
 def get_gemini_model():
     from langchain_google_genai import ChatGoogleGenerativeAI
     GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+    # Optionally enable Gemini's advanced "thinking" / function-style outputs.
+    # This can cause the model to emit structured function/tool call metadata.
+    # Enable it by setting GEMINI_ENABLE_THINKING=1 in the environment.
+    enable_thinking = bool(os.environ.get("GEMINI_ENABLE_THINKING"))
+    model_kwargs = {"enable_thinking": True} if enable_thinking else {}
+
     llm = ChatGoogleGenerativeAI(
         model="gemini-2.5-flash",
         google_api_key=GEMINI_API_KEY,
@@ -61,13 +67,7 @@ def get_gemini_model():
         client_options={
             "api_endpoint": "https://generativelanguage.googleapis.com"
         },
-    # disable advanced "thinking" / function-style outputs which can return
-    # malformed function calls for some prompts. Keep model_kwargs empty for
-    # standard text outputs.
-        # model_kwargs={
-        #     "enable_thinking": True  # If you want to enable this feature,            
-        # }
-        model_kwargs={}
+        model_kwargs=model_kwargs,
     )
     """Get the Gemini model for the agent."""
     return llm
