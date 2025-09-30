@@ -36,3 +36,4 @@ packages = ["deepagents"]
 
 [tool.poe.tasks]
 cli = "uv run python main.py --trace"
+api = "uv run python src/api.py --trace"
